@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London Borough Transport Data</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --border: #e2e0d8;
+    --text: #1a1917; --muted: #6b6960; --accent: #2d5a3d;
+    --accent-light: #e8f0eb; --outer: #c4522a; --outer-light: #faeee8;
+    --inner: #2d5a8e; --inner-light: #e8eff7;
+    --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: baseline; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
+  header span { font-size: 13px; color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 61px); }
+  aside { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 0; position: sticky; top: 61px; height: calc(100vh - 61px); overflow-y: auto; }
+  .sidebar-section { padding: 0 20px 24px; }
+  .sidebar-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .metric-btn { display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 8px 10px; border-radius: 6px; font-family: var(--font); font-size: 13.5px; color: var(--text); line-height: 1.3; margin-bottom: 2px; transition: background 0.15s; }
+  .metric-btn:hover { background: var(--bg); }
+  .metric-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0 20px 24px; }
+  .filter-row { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .filter-btn { display: flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; cursor: pointer; font-family: var(--font); font-size: 13px; color: var(--muted); transition: all 0.15s; }
+  .filter-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .filter-btn.active-outer { border-color: var(--outer); color: var(--outer); background: var(--outer-light); }
+  .filter-btn.active-outer .dot { background: var(--outer); }
+  .filter-btn.active-inner { border-color: var(--inner); color: var(--inner); background: var(--inner-light); }
+  .filter-btn.active-inner .dot { background: var(--inner); }
+  .toggle-btn { display: flex; align-items: center; gap: 8px; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; cursor: pointer; font-family: var(--font); font-size: 13px; color: var(--muted); transition: all 0.15s; width: 100%; }
+  .toggle-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .toggle-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .toggle-btn.active .dot { background: var(--accent); }
+  main { padding: 32px; display: flex; flex-direction: column; gap: 28px; overflow: hidden; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-card .value { font-family: var(--mono); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+  .stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .stat-card.outer-card { border-left: 3px solid var(--outer); }
+  .stat-card.inner-card { border-left: 3px solid var(--inner); }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; }
+  .chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
+  .chart-title { font-size: 14px; font-weight: 500; }
+  .chart-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sort-select { font-family: var(--font); font-size: 12px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 5px 8px; cursor: pointer; flex-shrink: 0; }
+  .bar-chart-wrap { overflow-y: auto; max-height: 480px; padding-right: 4px; }
+  .bar-row { display: grid; grid-template-columns: 160px 1fr 80px; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .bar-name { font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { background: var(--bg); border-radius: 3px; height: 20px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .bar-fill.outer { background: var(--outer); opacity: 0.75; }
+  .bar-fill.inner { background: var(--inner); opacity: 0.75; }
+  .bar-fill.all { background: #888780; opacity: 0.6; }
+  .bar-val { font-family: var(--mono); font-size: 11.5px; color: var(--text); white-space: nowrap; }
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .scatter-wrap { position: relative; height: 320px; }
+  .legend-row { display: flex; gap: 20px; margin-bottom: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .scatter-filter-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .scatter-filter-btn { font-family: var(--font); font-size: 12px; padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border); background: none; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .scatter-filter-btn.f-all { border-color: #888; color: #444; background: #f0efea; }
+  .scatter-filter-btn.f-outer { border-color: var(--outer); color: var(--outer); background: var(--outer-light); }
+  .scatter-filter-btn.f-inner { border-color: var(--inner); color: var(--inner); background: var(--inner-light); }
+  .corr-row { font-size: 12px; color: var(--muted); margin-bottom: 8px; min-height: 20px; display: flex; align-items: center; gap: 6px; }
+  .corr-r { font-family: var(--mono); font-weight: 500; font-size: 13px; }
+  .corr-pos { color: var(--accent); }
+  .corr-neg { color: var(--outer); }
+  .corr-meta { color: var(--muted); }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>London Borough Transport</h1>
+  <span>Car dependency &amp; public transit · 33 boroughs</span>
+</header>
+<div class="layout">
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Metric</div>
+      <button class="metric-btn active" data-metric="car_per_capita">Car km per capita</button>
+      <button class="metric-btn" data-metric="cars_per_capita">Cars per capita</button>
+      <button class="metric-btn" data-metric="co2_per_capita">Annual road CO₂ per capita</button>
+      <button class="metric-btn" data-metric="cars_per_capita_per_income">Cars per capita ÷ income</button>
+      <button class="metric-btn" data-metric="ptal_index">Mean PTAL Access Index</button>
+      <button class="metric-btn" data-metric="transit_density">Total transit stops per km²</button>
+      <button class="metric-btn" data-metric="bus_density">Bus stops per km²</button>
+      <button class="metric-btn" data-metric="tube_density">Tube stops per km²</button>
+      <button class="metric-btn" data-metric="school_dist">Home-to-school distance</button>
+      <button class="metric-btn" data-metric="population">Population</button>
+      <button class="metric-btn" data-metric="children_pct">Children percentage</button>
+      <button class="metric-btn" data-metric="area">Area</button>
+      <button class="metric-btn" data-metric="median_income">Median income</button>
+    </div>
+    <hr class="divider">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Highlight</div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn" id="btn-outer"><span class="dot"></span> Outer boroughs</button>
+      <button class="filter-btn" id="btn-inner"><span class="dot"></span> Inner boroughs</button>
+    </div>
+    <hr class="divider">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Options</div>
+    </div>
+    <div class="filter-row">
+      <button class="toggle-btn" id="btn-col"><span class="dot"></span> Exclude City of London</button>
+    </div>
+  </aside>
+  <main>
+    <div class="stat-row" id="stat-row"></div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title" id="bar-title">Car km per capita — all boroughs</div>
+          <div class="chart-sub">Outer avg vs inner avg shown in summary cards above</div>
+        </div>
+        <select class="sort-select" id="sort-sel">
+          <option value="desc">Highest first</option>
+          <option value="asc">Lowest first</option>
+          <option value="alpha">A–Z</option>
+        </select>
+      </div>
+      <div class="bar-chart-wrap" id="bar-chart"></div>
+    </div>
+    <div class="bottom-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title" id="scatter1-title">Metric vs car km per capita</div>
+            <div class="chart-sub" id="scatter1-sub">Hover points for borough names</div>
+          </div>
+        </div>
+        <div class="scatter-filter-row">
+          <button class="scatter-filter-btn f-all" id="s1-all" onclick="setScatter1Filter('all')">All</button>
+          <button class="scatter-filter-btn" id="s1-outer" onclick="setScatter1Filter('outer')">Outer only</button>
+          <button class="scatter-filter-btn" id="s1-inner" onclick="setScatter1Filter('inner')">Inner only</button>
+        </div>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--outer)"></span>Outer</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--inner)"></span>Inner</span>
+        </div>
+        <div class="corr-row" id="corr1-row"></div>
+        <div class="scatter-wrap"><canvas id="scatter1" role="img" aria-label="Scatter chart: selected metric vs car km per capita"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title" id="scatter2-title">Metric vs cars per capita</div>
+            <div class="chart-sub" id="scatter2-sub">Hover points for borough names</div>
+          </div>
+        </div>
+        <div class="scatter-filter-row">
+          <button class="scatter-filter-btn f-all" id="s2-all" onclick="setScatter2Filter('all')">All</button>
+          <button class="scatter-filter-btn" id="s2-outer" onclick="setScatter2Filter('outer')">Outer only</button>
+          <button class="scatter-filter-btn" id="s2-inner" onclick="setScatter2Filter('inner')">Inner only</button>
+        </div>
+        <div class="legend-row">
+          <span class="legend-item"><span class="legend-dot" style="background:var(--outer)"></span>Outer</span>
+          <span class="legend-item"><span class="legend-dot" style="background:var(--inner)"></span>Inner</span>
+        </div>
+        <div class="corr-row" id="corr2-row"></div>
+        <div class="scatter-wrap"><canvas id="scatter2" role="img" aria-label="Scatter chart: selected metric vs cars per capita"></canvas></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const INCOME = {"Barking and Dagenham":29400,"Barnet":36100,"Bexley":33200,"Brent":30100,"Bromley":38800,"Croydon":33200,"Ealing":32500,"Enfield":32200,"Haringey":34500,"Harrow":33700,"Havering":34000,"Hillingdon":34700,"Hounslow":31900,"Kingston upon Thames":40800,"Merton":37000,"Newham":29800,"Redbridge":32100,"Richmond upon Thames":48100,"Sutton":34400,"Waltham Forest":33700,"Camden":42800,"City of London":70000,"Greenwich":35900,"Hackney":37600,"Hammersmith and Fulham":41600,"Islington":40800,"Kensington and Chelsea":47800,"Lambeth":39300,"Lewisham":34600,"Southwark":38300,"Tower Hamlets":38700,"Wandsworth":43100,"Westminster":47400};
+
+const PTAL = {"Barking and Dagenham":7.015,"Barnet":6.543,"Bexley":5.049,"Brent":10.524,"Bromley":3.764,"Croydon":6.414,"Ealing":8.930,"Enfield":5.129,"Haringey":13.125,"Harrow":6.591,"Havering":3.106,"Hillingdon":4.007,"Hounslow":6.578,"Kingston upon Thames":5.523,"Merton":8.502,"Newham":13.259,"Redbridge":6.101,"Richmond upon Thames":5.065,"Sutton":5.392,"Waltham Forest":7.916,"Camden":25.011,"City of London":86.639,"Greenwich":9.709,"Hackney":15.779,"Hammersmith and Fulham":16.928,"Islington":25.823,"Kensington and Chelsea":22.306,"Lambeth":20.794,"Lewisham":11.871,"Southwark":19.449,"Tower Hamlets":21.656,"Wandsworth":12.935,"Westminster":36.787};
+
+const RAW = {"Barking and Dagenham":{"bus":647,"tube":26,"dlr":0,"overground":9,"tram":0,"cablecar":0,"accidents":1190,"co2":149492.03,"pop":218869,"children":57124,"school_dist":1.42,"car_km":501.4,"cars_k":65.774,"area":36.11},"Barnet":{"bus":1745,"tube":70,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":1782,"co2":338489.87,"pop":389343,"children":79987,"school_dist":2.44,"car_km":1307.9,"cars_k":139.148,"area":86.75},"Bexley":{"bus":1125,"tube":0,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":934,"co2":199336.89,"pop":246472,"children":50645,"school_dist":2.23,"car_km":779.5,"cars_k":104.078,"area":60.58},"Brent":{"bus":1006,"tube":114,"dlr":0,"overground":60,"tram":0,"cablecar":0,"accidents":1784,"co2":217486.84,"pop":339814,"children":64673,"school_dist":1.96,"car_km":746.9,"cars_k":91.917,"area":43.23},"Bromley":{"bus":1997,"tube":0,"dlr":0,"overground":13,"tram":25,"cablecar":0,"accidents":1432,"co2":276858.96,"pop":329989,"children":64903,"school_dist":2.16,"car_km":1144.5,"cars_k":142.158,"area":150.13},"Croydon":{"bus":1701,"tube":0,"dlr":0,"overground":13,"tram":123,"cablecar":0,"accidents":1914,"co2":272647.66,"pop":390716,"children":80321,"school_dist":2.03,"car_km":1070.9,"cars_k":135.967,"area":86.50},"Ealing":{"bus":1207,"tube":84,"dlr":0,"overground":10,"tram":0,"cablecar":0,"accidents":1950,"co2":287424.09,"pop":367115,"children":71744,"school_dist":1.41,"car_km":975.9,"cars_k":115.548,"area":55.54},"Enfield":{"bus":1249,"tube":24,"dlr":0,"overground":25,"tram":0,"cablecar":0,"accidents":1890,"co2":395836.20,"pop":329984,"children":72802,"school_dist":1.82,"car_km":1291.4,"cars_k":116.56,"area":80.83},"Haringey":{"bus":772,"tube":39,"dlr":0,"overground":29,"tram":0,"cablecar":0,"accidents":1718,"co2":120614.81,"pop":264237,"children":48237,"school_dist":1.50,"car_km":378.9,"cars_k":60.889,"area":29.60},"Harrow":{"bus":716,"tube":57,"dlr":0,"overground":15,"tram":0,"cablecar":0,"accidents":934,"co2":128389.84,"pop":261203,"children":51582,"school_dist":1.80,"car_km":531.2,"cars_k":96.269,"area":50.46},"Havering":{"bus":1115,"tube":20,"dlr":0,"overground":12,"tram":0,"cablecar":0,"accidents":1162,"co2":415093.40,"pop":262052,"children":52322,"school_dist":2.11,"car_km":1313.0,"cars_k":112.32,"area":112.35},"Hillingdon":{"bus":1387,"tube":88,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":1366,"co2":449577.81,"pop":305909,"children":64031,"school_dist":1.85,"car_km":1883.4,"cars_k":145.173,"area":115.70},"Hounslow":{"bus":1080,"tube":44,"dlr":0,"overground":5,"tram":0,"cablecar":0,"accidents":1502,"co2":316366.17,"pop":288182,"children":59500,"school_dist":1.86,"car_km":1326.6,"cars_k":94.973,"area":55.98},"Kingston upon Thames":{"bus":669,"tube":0,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":676,"co2":170903.68,"pop":168061,"children":32599,"school_dist":2.04,"car_km":770.3,"cars_k":63.21,"area":37.26},"Merton":{"bus":727,"tube":26,"dlr":0,"overground":0,"tram":41,"cablecar":0,"accidents":968,"co2":145396.58,"pop":215186,"children":42414,"school_dist":1.68,"car_km":500.9,"cars_k":67.823,"area":37.62},"Newham":{"bus":895,"tube":40,"dlr":122,"overground":15,"tram":0,"cablecar":4,"accidents":1772,"co2":187225.04,"pop":351036,"children":74863,"school_dist":1.27,"car_km":718.0,"cars_k":68.555,"area":36.20},"Redbridge":{"bus":890,"tube":66,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":1412,"co2":222216.67,"pop":310260,"children":68243,"school_dist":1.52,"car_km":901.5,"cars_k":102.631,"area":56.42},"Richmond upon Thames":{"bus":828,"tube":9,"dlr":0,"overground":11,"tram":0,"cablecar":0,"accidents":816,"co2":162071.03,"pop":195279,"children":39444,"school_dist":1.46,"car_km":645.8,"cars_k":74.428,"area":57.41},"Sutton":{"bus":746,"tube":0,"dlr":0,"overground":0,"tram":8,"cablecar":0,"accidents":872,"co2":147171.88,"pop":209639,"children":43982,"school_dist":2.08,"car_km":585.1,"cars_k":84.094,"area":43.85},"Waltham Forest":{"bus":831,"tube":20,"dlr":0,"overground":44,"tram":0,"cablecar":0,"accidents":1312,"co2":160200.67,"pop":278424,"children":56244,"school_dist":1.40,"car_km":608.6,"cars_k":75.58,"area":38.81},"Camden":{"bus":688,"tube":132,"dlr":0,"overground":40,"tram":0,"cablecar":0,"accidents":1770,"co2":122343.54,"pop":210134,"children":32228,"school_dist":1.48,"car_km":316.0,"cars_k":39.155,"area":21.79},"City of London":{"bus":191,"tube":76,"dlr":12,"overground":3,"tram":0,"cablecar":0,"accidents":576,"co2":39899.06,"pop":8580,"children":578,"school_dist":1.54,"car_km":76.6,"cars_k":2.292,"area":2.90},"Greenwich":{"bus":1165,"tube":8,"dlr":28,"overground":0,"tram":0,"cablecar":4,"accidents":1442,"co2":247996.06,"pop":289071,"children":59321,"school_dist":1.65,"car_km":919.6,"cars_k":75.925,"area":47.33},"Hackney":{"bus":765,"tube":8,"dlr":0,"overground":57,"tram":0,"cablecar":0,"accidents":1712,"co2":114256.19,"pop":259146,"children":49678,"school_dist":1.26,"car_km":314.5,"cars_k":40.442,"area":19.05},"Hammersmith and Fulham":{"bus":453,"tube":87,"dlr":0,"overground":24,"tram":0,"cablecar":0,"accidents":1394,"co2":112782.67,"pop":183157,"children":28530,"school_dist":1.98,"car_km":341.6,"cars_k":45.905,"area":16.40},"Islington":{"bus":641,"tube":62,"dlr":0,"overground":24,"tram":0,"cablecar":0,"accidents":1466,"co2":97149.98,"pop":216587,"children":32963,"school_dist":1.35,"car_km":248.9,"cars_k":33.21,"area":14.86},"Kensington and Chelsea":{"bus":437,"tube":81,"dlr":0,"overground":2,"tram":0,"cablecar":0,"accidents":1458,"co2":125655.998,"pop":143376,"children":20286,"school_dist":1.84,"car_km":343.1,"cars_k":37.643,"area":12.12},"Lambeth":{"bus":926,"tube":63,"dlr":0,"overground":8,"tram":0,"cablecar":0,"accidents":2380,"co2":187713.54,"pop":317651,"children":48710,"school_dist":1.68,"car_km":511.0,"cars_k":59.679,"area":26.81},"Lewisham":{"bus":1050,"tube":0,"dlr":12,"overground":32,"tram":0,"cablecar":0,"accidents":1584,"co2":176929.22,"pop":300552,"children":58142,"school_dist":1.56,"car_km":532.7,"cars_k":73.501,"area":35.15},"Southwark":{"bus":938,"tube":42,"dlr":0,"overground":27,"tram":0,"cablecar":0,"accidents":2186,"co2":178695.34,"pop":307635,"children":51501,"school_dist":1.53,"car_km":491.6,"cars_k":54.782,"area":28.86},"Tower Hamlets":{"bus":685,"tube":63,"dlr":100,"overground":29,"tram":0,"cablecar":0,"accidents":2278,"co2":193810.21,"pop":310306,"children":57421,"school_dist":1.19,"car_km":597.3,"cars_k":46.02,"area":19.78},"Wandsworth":{"bus":870,"tube":39,"dlr":0,"overground":8,"tram":0,"cablecar":0,"accidents":1920,"co2":169088.02,"pop":327507,"children":53948,"school_dist":1.57,"car_km":539.2,"cars_k":75.668,"area":34.26},"Westminster":{"bus":791,"tube":284,"dlr":0,"overground":0,"tram":0,"cablecar":0,"accidents":3070,"co2":192434.81,"pop":204235,"children":26769,"school_dist":2.03,"car_km":487.1,"cars_k":69.641,"area":21.49}};
+
+const OUTER = new Set(["Barking and Dagenham","Barnet","Bexley","Bromley","Croydon","Ealing","Enfield","Haringey","Harrow","Havering","Hillingdon","Hounslow","Kingston upon Thames","Merton","Newham","Redbridge","Richmond upon Thames","Sutton","Waltham Forest"]);
+
+function compute(name, d) {
+  const stops = d.bus + d.tube + d.dlr + d.overground + d.tram + d.cablecar;
+  const carKmTotal = d.car_km * 1e6;
+  return {
+    car_per_capita: carKmTotal / d.pop,
+    cars_per_capita: (d.cars_k * 1000) / d.pop,
+    co2_per_capita: d.co2 / d.pop,
+    transit_density: stops / d.area,
+    bus_density: d.bus / d.area,
+    tube_density: d.tube / d.area,
+    school_dist: d.school_dist,
+    population: d.pop,
+    children_pct: d.children / d.pop * 100,
+    area: d.area,
+    median_income: INCOME[name] || 0,
+    cars_per_capita_per_income: ((d.cars_k * 1000) / d.pop) / (INCOME[name] || 1) * 10000,
+    ptal_index: PTAL[name] || 0,
+    _carKmPerCapita: carKmTotal / d.pop,
+    _carsPerCapita: (d.cars_k * 1000) / d.pop,
+    _isOuter: OUTER.has(name),
+  };
+}
+
+const DATA = {};
+for (const [name, d] of Object.entries(RAW)) DATA[name] = compute(name, d);
+
+const METRICS = {
+  car_per_capita:   { label: "Car km per capita",         fmt: v => Math.round(v).toLocaleString() + " km",  yLabel: "Car km per capita",      title: "Car km per capita" },
+  cars_per_capita:  { label: "Cars per capita",            fmt: v => v.toFixed(3),                             yLabel: "Cars per capita",        title: "Cars per capita" },
+  co2_per_capita:   { label: "Annual road CO₂ per capita",        fmt: v => v.toFixed(2) + " tonnes",  yLabel: "CO₂ per capita (tonnes)",    title: "Road CO₂ per capita (tonnes)" },
+  transit_density:  { label: "Total transit stops per km²",fmt: v => v.toFixed(1),                             yLabel: "Transit stops/km²",      title: "Total transit stops per km²" },
+  bus_density:      { label: "Bus stops per km²",          fmt: v => v.toFixed(1),                             yLabel: "Bus stops/km²",          title: "Bus stops per km²" },
+  tube_density:     { label: "Tube stops per km²",         fmt: v => v.toFixed(2),                             yLabel: "Tube stops/km²",         title: "Tube stops per km²" },
+  school_dist:      { label: "Home-to-school distance",    fmt: v => v.toFixed(2) + " km",                     yLabel: "Distance (km)",          title: "Home-to-school distance (km)" },
+  population:       { label: "Population",                 fmt: v => Math.round(v).toLocaleString(),           yLabel: "Population",             title: "Population (2023)" },
+  children_pct:     { label: "Children percentage",        fmt: v => v.toFixed(1) + "%",                       yLabel: "Children (%)",           title: "Children as % of population" },
+  area:             { label: "Area",                        fmt: v => v.toFixed(1) + " km²",                   yLabel: "Area (km²)",             title: "Area (km²)" },
+  median_income:    { label: "Median income",               fmt: v => "£" + Math.round(v).toLocaleString(),     yLabel: "Median income (£)",      title: "Median income (2024, £)" },
+  cars_per_capita_per_income: { label: "Cars per capita ÷ income", fmt: v => v.toFixed(3),                     yLabel: "Cars/capita per £10k",   title: "Cars per capita ÷ median income (×10,000)" },
+  ptal_index:  { label: "Mean PTAL Access Index",  fmt: v => v.toFixed(2),                             yLabel: "PTAL Index",             title: "Mean PTAL Access Index (2023)" },
+};
+
+let currentMetric = 'car_per_capita';
+let highlightMode = 'none';
+let sortMode = 'desc';
+let excludeCoL = false;
+let scatter1Filter = 'all';
+let scatter2Filter = 'all';
+let chart1 = null, chart2 = null;
+
+function getActiveBoroughs() {
+  return Object.keys(DATA).filter(n => !(excludeCoL && n === 'City of London'));
+}
+
+function avg(arr) { return arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : 0; }
+
+function renderStats() {
+  const boroughs = getActiveBoroughs();
+  const outerVals = boroughs.filter(b => DATA[b]._isOuter).map(b => DATA[b][currentMetric]);
+  const innerVals = boroughs.filter(b => !DATA[b]._isOuter).map(b => DATA[b][currentMetric]);
+  const allVals = boroughs.map(b => DATA[b][currentMetric]);
+  const fmt = METRICS[currentMetric].fmt;
+  const nTotal = boroughs.length;
+  const nOuter = outerVals.length;
+  const nInner = innerVals.length;
+  document.getElementById('stat-row').innerHTML = `
+    <div class="stat-card">
+      <div class="label">London average</div>
+      <div class="value">${fmt(avg(allVals))}</div>
+      <div class="sub">All ${nTotal} boroughs</div>
+    </div>
+    <div class="stat-card outer-card">
+      <div class="label">Outer average</div>
+      <div class="value">${fmt(avg(outerVals))}</div>
+      <div class="sub">${nOuter} outer boroughs</div>
+    </div>
+    <div class="stat-card inner-card">
+      <div class="label">Inner average</div>
+      <div class="value">${fmt(avg(innerVals))}</div>
+      <div class="sub">${nInner} inner boroughs</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Outer / inner ratio</div>
+      <div class="value">${innerVals.length && outerVals.length ? (avg(outerVals)/avg(innerVals)).toFixed(2) + '×' : '—'}</div>
+      <div class="sub">How much higher outer is</div>
+    </div>
+  `;
+}
+
+function renderBars() {
+  const m = METRICS[currentMetric];
+  document.getElementById('bar-title').textContent = m.title + ' — all boroughs';
+  const fmt = m.fmt;
+  let boroughs = getActiveBoroughs();
+  if (sortMode === 'desc') boroughs.sort((a,b) => DATA[b][currentMetric] - DATA[a][currentMetric]);
+  else if (sortMode === 'asc') boroughs.sort((a,b) => DATA[a][currentMetric] - DATA[b][currentMetric]);
+  else boroughs.sort();
+  const maxVal = Math.max(...boroughs.map(b => DATA[b][currentMetric]));
+  const container = document.getElementById('bar-chart');
+  container.innerHTML = '';
+  boroughs.forEach(name => {
+    const val = DATA[name][currentMetric];
+    const pct = (val / maxVal * 100).toFixed(1);
+    const isOuter = DATA[name]._isOuter;
+    let cls = 'all';
+    if (highlightMode === 'outer') cls = isOuter ? 'outer' : 'all';
+    else if (highlightMode === 'inner') cls = !isOuter ? 'inner' : 'all';
+    else cls = isOuter ? 'outer' : 'inner';
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `<div class="bar-name" title="${name}">${name}</div><div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div><div class="bar-val">${fmt(val)}</div>`;
+    container.appendChild(row);
+  });
+}
+
+function pearsonR(pts) {
+  const n = pts.length;
+  if (n < 2) return null;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const mx = xs.reduce((a,b) => a+b, 0) / n;
+  const my = ys.reduce((a,b) => a+b, 0) / n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx, dy = ys[i] - my;
+    num += dx * dy; dx2 += dx * dx; dy2 += dy * dy;
+  }
+  const denom = Math.sqrt(dx2 * dy2);
+  return denom === 0 ? null : num / denom;
+}
+
+function getFilteredPoints(yKey, filter) {
+  const pts = [];
+  for (const name of getActiveBoroughs()) {
+    const d = DATA[name];
+    if (filter === 'outer' && !d._isOuter) continue;
+    if (filter === 'inner' && d._isOuter) continue;
+    pts.push({ x: d[currentMetric], y: d[yKey] });
+  }
+  return pts;
+}
+
+function displayCorr(elemId, r, n) {
+  const el = document.getElementById(elemId);
+  if (r === null) { el.innerHTML = ''; return; }
+  const absR = Math.abs(r);
+  const dir = r >= 0 ? 'pos' : 'neg';
+  const strength = absR >= 0.7 ? 'strong' : absR >= 0.4 ? 'moderate' : 'weak';
+  const dirLabel = r >= 0 ? 'positive' : 'negative';
+  el.innerHTML = `Pearson <span class="corr-r corr-${dir}">r = ${r.toFixed(3)}</span><span class="corr-meta"> · ${strength} ${dirLabel} · n=${n}</span>`;
+}
+
+function buildScatterDatasets(yKey, filter) {
+  const boroughs = getActiveBoroughs();
+  const outerPts = [], innerPts = [];
+  for (const name of boroughs) {
+    const d = DATA[name];
+    const pt = { x: +d[currentMetric].toFixed(4), y: +d[yKey].toFixed(4), label: name };
+    if (d._isOuter) outerPts.push(pt);
+    else innerPts.push(pt);
+  }
+  const datasets = [];
+  if (filter === 'all' || filter === 'outer') datasets.push({ label: 'Outer', data: outerPts, backgroundColor: 'rgba(196,82,42,0.7)', pointRadius: 5, pointHoverRadius: 7 });
+  if (filter === 'all' || filter === 'inner') datasets.push({ label: 'Inner', data: innerPts, backgroundColor: 'rgba(45,90,142,0.7)', pointRadius: 5, pointHoverRadius: 7 });
+  return datasets;
+}
+
+function scatterOptions(xLabel, yLabel, fmtX, fmtY) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `${ctx.raw.label}: x=${fmtX(ctx.raw.x)}, y=${fmtY(ctx.raw.y)}` } }
+    },
+    scales: {
+      x: { title: { display: true, text: xLabel, font: { size: 11 } }, grid: { color: '#e2e0d8' } },
+      y: { title: { display: true, text: yLabel, font: { size: 11 } }, grid: { color: '#e2e0d8' } }
+    }
+  };
+}
+
+function renderScatters() {
+  const m = METRICS[currentMetric];
+  const fmtM = m.fmt;
+  const fmtCarKm = v => Math.round(v).toLocaleString() + ' km';
+  const fmtCars = v => v.toFixed(3);
+
+  document.getElementById('scatter1-title').textContent = m.label + ' vs car km per capita';
+  document.getElementById('scatter2-title').textContent = m.label + ' vs cars per capita';
+
+  if (chart1) chart1.destroy();
+  if (chart2) chart2.destroy();
+
+  const ctx1 = document.getElementById('scatter1').getContext('2d');
+  chart1 = new Chart(ctx1, {
+    type: 'scatter',
+    data: { datasets: buildScatterDatasets('_carKmPerCapita', scatter1Filter) },
+    options: scatterOptions(m.yLabel, 'Car km per capita', fmtM, fmtCarKm)
+  });
+
+  const ctx2 = document.getElementById('scatter2').getContext('2d');
+  chart2 = new Chart(ctx2, {
+    type: 'scatter',
+    data: { datasets: buildScatterDatasets('_carsPerCapita', scatter2Filter) },
+    options: scatterOptions(m.yLabel, 'Cars per capita', fmtM, fmtCars)
+  });
+
+  const pts1 = getFilteredPoints('_carKmPerCapita', scatter1Filter);
+  displayCorr('corr1-row', pearsonR(pts1), pts1.length);
+  const pts2 = getFilteredPoints('_carsPerCapita', scatter2Filter);
+  displayCorr('corr2-row', pearsonR(pts2), pts2.length);
+}
+
+function setScatterFilterStyle(which, val) {
+  const prefix = which === 1 ? 's1' : 's2';
+  ['all','outer','inner'].forEach(f => {
+    const btn = document.getElementById(`${prefix}-${f}`);
+    btn.className = 'scatter-filter-btn' + (f === val ? ` f-${f}` : '');
+  });
+}
+
+function setScatter1Filter(val) { scatter1Filter = val; setScatterFilterStyle(1, val); renderScatters(); }
+function setScatter2Filter(val) { scatter2Filter = val; setScatterFilterStyle(2, val); renderScatters(); }
+
+function renderAll() { renderStats(); renderBars(); renderScatters(); }
+
+document.querySelectorAll('.metric-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMetric = btn.dataset.metric;
+    renderAll();
+  });
+});
+
+document.getElementById('sort-sel').addEventListener('change', e => { sortMode = e.target.value; renderBars(); });
+
+const btnOuter = document.getElementById('btn-outer');
+const btnInner = document.getElementById('btn-inner');
+btnOuter.addEventListener('click', () => {
+  if (highlightMode === 'outer') { highlightMode = 'none'; btnOuter.className = 'filter-btn'; }
+  else { highlightMode = 'outer'; btnOuter.className = 'filter-btn active-outer'; btnInner.className = 'filter-btn'; }
+  renderBars();
+});
+btnInner.addEventListener('click', () => {
+  if (highlightMode === 'inner') { highlightMode = 'none'; btnInner.className = 'filter-btn'; }
+  else { highlightMode = 'inner'; btnInner.className = 'filter-btn active-inner'; btnOuter.className = 'filter-btn'; }
+  renderBars();
+});
+
+const btnCoL = document.getElementById('btn-col');
+btnCoL.addEventListener('click', () => {
+  excludeCoL = !excludeCoL;
+  btnCoL.className = excludeCoL ? 'toggle-btn active' : 'toggle-btn';
+  btnCoL.querySelector('.dot').style.background = excludeCoL ? 'var(--accent)' : 'var(--border)';
+  renderAll();
+});
+
+renderAll();
+setScatterFilterStyle(1, 'all');
+setScatterFilterStyle(2, 'all');
+</script>
+</body>
+</html>
