@@ -79,13 +79,83 @@
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  /* ---- Navigation ---- */
+  .header-text { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
+  nav { margin-left: auto; display: flex; gap: 4px; flex-shrink: 0; }
+  .nav-link { font-family: var(--font); font-size: 13px; color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+  .nav-link:hover { background: var(--bg); color: var(--text); }
+  .nav-link.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+
+  /* ---- Pages ---- */
+  .page { display: none; }
+  .page.visible { display: block; }
+  .page-main { max-width: 980px; margin: 0 auto; padding: 32px; }
+  .page-title { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  /* ---- References ---- */
+  .ref-list { list-style: none; counter-reset: ref -1; }
+  .ref-item { counter-increment: ref; display: grid; grid-template-columns: 48px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .ref-item::before { content: "[" counter(ref) "]"; font-family: var(--mono); font-size: 12.5px; color: var(--muted); padding-top: 1px; }
+  .ref-item a { color: var(--accent); word-break: break-all; text-decoration: none; }
+  .ref-item a:hover { text-decoration: underline; }
+  .ref-meta { color: var(--muted); }
+
+  /* ---- Gallery ---- */
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  .gallery-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .gallery-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--bg); }
+  .gallery-caption { font-size: 13px; padding: 10px 14px; color: var(--text); }
+  .gallery-status { font-size: 13.5px; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; padding: 28px; text-align: center; line-height: 1.7; }
+  .gallery-status code { font-family: var(--mono); font-size: 12.5px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 900px) {
+    header { padding: 14px 16px; flex-wrap: wrap; gap: 8px; }
+    .header-text { flex-wrap: wrap; gap: 4px 12px; }
+    nav { margin-left: 0; width: 100%; }
+    .layout { display: block; }
+    aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .sidebar-section { padding: 0 16px 14px; }
+    .sidebar-section .metric-btn { display: inline-block; width: auto; border: 1px solid var(--border); margin: 0 6px 6px 0; }
+    .divider { margin: 0 16px 14px; }
+    .filter-row { padding: 0 16px 8px; flex-direction: row; flex-wrap: wrap; }
+    .filter-btn, .toggle-btn { width: auto; }
+    main { padding: 16px; gap: 16px; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .bottom-grid { grid-template-columns: 1fr; gap: 16px; }
+    .bar-row { grid-template-columns: 110px 1fr 70px; gap: 8px; }
+    .bar-name { font-size: 11px; }
+    .page-main { padding: 20px 16px; }
+    .ref-item { grid-template-columns: 40px 1fr; }
+  }
+  @media (max-width: 480px) {
+    header span { display: none; }
+    .stat-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { padding: 12px 14px; }
+    .stat-card .value { font-size: 18px; }
+    .chart-card { padding: 16px; }
+    .bar-row { grid-template-columns: 96px 1fr 62px; }
+    .bar-val { font-size: 10.5px; }
+    .scatter-wrap { height: 260px; }
+    .gallery-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>London Borough Transport</h1>
-  <span>Car dependency &amp; public transit · 33 boroughs</span>
+  <div class="header-text">
+    <h1>London Borough Transport</h1>
+    <span>Car dependency &amp; public transit · 33 boroughs</span>
+  </div>
+  <nav>
+    <a class="nav-link active" href="#dashboard" data-page="dashboard">Dashboard</a>
+    <a class="nav-link" href="#gallery" data-page="gallery">Gallery</a>
+    <a class="nav-link" href="#references" data-page="references">References</a>
+  </nav>
 </header>
+<div class="page visible" id="page-dashboard">
 <div class="layout">
   <aside>
     <div class="sidebar-section">
@@ -99,6 +169,7 @@
       <button class="metric-btn" data-metric="bus_density">Bus stops per km²</button>
       <button class="metric-btn" data-metric="tube_density">Tube stops per km²</button>
       <button class="metric-btn" data-metric="school_dist">Home-to-school distance</button>
+      <button class="metric-btn" data-metric="accidents">Road accidents (2019)</button>
       <button class="metric-btn" data-metric="population">Population</button>
       <button class="metric-btn" data-metric="children_pct">Children percentage</button>
       <button class="metric-btn" data-metric="area">Area</button>
@@ -178,6 +249,44 @@
     </div>
   </main>
 </div>
+</div>
+
+<div class="page" id="page-gallery">
+  <div class="page-main">
+    <div class="page-title">Gallery</div>
+    <div class="page-sub">Images load automatically from the <code style="font-family:var(--mono);font-size:12px">gallery/</code> folder · captions come from file names</div>
+    <div class="gallery-grid" id="gallery-grid"></div>
+    <div class="gallery-status" id="gallery-status" hidden></div>
+  </div>
+</div>
+
+<div class="page" id="page-references">
+  <div class="page-main">
+    <div class="page-title">References</div>
+    <div class="page-sub">Poster references · numbering matches in-text citations</div>
+    <ol class="ref-list">
+      <li class="ref-item"><span>D. F. Azmi, "London Borough Transport Data," <span class="ref-meta">Github.io, 2026.</span> <a href="https://d-faris-ucl.github.io/How-to-Change-the-World-Dashboard/" target="_blank" rel="noopener">https://d-faris-ucl.github.io/How-to-Change-the-World-Dashboard/</a> <span class="ref-meta">(accessed Jun. 04, 2026).</span></span></li>
+      <li class="ref-item"><span>Transport For London, "Transport for London Investment Planning," <span class="ref-meta">Feb. 2026. Accessed: Jun. 10, 2026. [Online].</span> Available: <a href="https://content.tfl.gov.uk/hillingdon-funding-letter-26-27.pdf" target="_blank" rel="noopener">https://content.tfl.gov.uk/hillingdon-funding-letter-26-27.pdf</a></span></li>
+      <li class="ref-item"><span>H. Council, "Local Implementation Plan – Hillingdon Council," <span class="ref-meta">Hillingdon Council, 2019.</span> <a href="https://pre.hillingdon.gov.uk/planning-policy/local-implementation-plan" target="_blank" rel="noopener">https://pre.hillingdon.gov.uk/planning-policy/local-implementation-plan</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>Transport For London, "Trial of on-demand bus service 'GoSutton' launches today," <span class="ref-meta">Transport For London, May 28, 2019.</span> <a href="https://tfl.gov.uk/info-for/media/press-releases/2019/may/trial-of-on-demand-bus-service-gosutton-launches-today" target="_blank" rel="noopener">https://tfl.gov.uk/info-for/media/press-releases/2019/may/trial-of-on-demand-bus-service-gosutton-launches-today</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>T. Deakin, "Bus accessibility: Brighton and Hove and Metrobus leading the way," <span class="ref-meta">Route One, Aug. 19, 2024.</span> <a href="https://www.route-one.net/features/bus-accessibility-brighton-and-hove-and-metrobus-leading-the-way" target="_blank" rel="noopener">https://www.route-one.net/features/bus-accessibility-brighton-and-hove-and-metrobus-leading-the-way</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>Transport For London, "TfL trials new bus shelter designs at 27 locations across London," <span class="ref-meta">Transport For London, Feb. 06, 2026.</span> <a href="https://tfl.gov.uk/info-for/media/press-releases/2026/february/tfl-trials-new-bus-shelter-designs-at-27-locations-across-london" target="_blank" rel="noopener">https://tfl.gov.uk/info-for/media/press-releases/2026/february/tfl-trials-new-bus-shelter-designs-at-27-locations-across-london</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>Transport For London, "TfL and Met Police begin trial of CCTV at bus shelters to improve safety, especially for women and girls," <span class="ref-meta">Transport for London, 2024.</span> <a href="https://tfl.gov.uk/info-for/media/press-releases/2024/november/tfl-and-met-police-begin-trial-of-cctv-at-bus-shelters-to-improve-safety-especially-for-women-and-girls" target="_blank" rel="noopener">https://tfl.gov.uk/info-for/media/press-releases/2024/november/tfl-and-met-police-begin-trial-of-cctv-at-bus-shelters-to-improve-safety-especially-for-women-and-girls</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>R. Bourn, "Campaign For Better Transport," <span class="ref-meta">bettertransport, Feb. 2012.</span> <a href="https://bettertransport.org.uk/wp-content/uploads/legacy-files/research-files/Transport-manifesto-for-Outer-London.pdf" target="_blank" rel="noopener">https://bettertransport.org.uk/wp-content/uploads/legacy-files/research-files/Transport-manifesto-for-Outer-London.pdf</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>H. Ritchie, "Which form of transport has the smallest carbon footprint?," <span class="ref-meta">Our World in Data, Aug. 30, 2023.</span> <a href="https://ourworldindata.org/travel-carbon-footprint" target="_blank" rel="noopener">https://ourworldindata.org/travel-carbon-footprint</a></span></li>
+      <li class="ref-item"><span>Transport For London, "PTAL 2023 Grid 100mx100m Data," <span class="ref-meta">Transport for London GIS Open Data Hub, 2023.</span> <a href="https://gis-tfl.opendata.arcgis.com/datasets/0646faf45243463aa04ca685e598f471/about" target="_blank" rel="noopener">https://gis-tfl.opendata.arcgis.com/datasets/0646faf45243463aa04ca685e598f471/about</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>Transport For London, "Travel in London," <span class="ref-meta">Transport For London, 2017. Accessed: Jun. 10, 2026. [Online].</span> Available: <a href="https://content.tfl.gov.uk/travel-in-london-report-10.pdf" target="_blank" rel="noopener">https://content.tfl.gov.uk/travel-in-london-report-10.pdf</a></span></li>
+      <li class="ref-item"><span>Transport For London, "TfL trials new bus shelter designs at 27 locations across London," <span class="ref-meta">Transport For London, Feb. 06, 2026.</span> <a href="https://tfl.gov.uk/info-for/media/press-releases/2026/february/tfl-trials-new-bus-shelter-designs-at-27-locations-across-london" target="_blank" rel="noopener">https://tfl.gov.uk/info-for/media/press-releases/2026/february/tfl-trials-new-bus-shelter-designs-at-27-locations-across-london</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>B. News, "Norwich's £500k electric buses 'will improve city's air quality,'" <span class="ref-meta">BBC News, Oct. 30, 2023.</span> <a href="https://www.bbc.co.uk/news/articles/cjq45vw3n4go" target="_blank" rel="noopener">https://www.bbc.co.uk/news/articles/cjq45vw3n4go</a> <span class="ref-meta">(accessed Jun. 11, 2026).</span></span></li>
+      <li class="ref-item"><span>Southern Vectis, "Our journey to electric," <span class="ref-meta">Southern Vectis, Feb. 12, 2026.</span> <a href="https://www.islandbuses.info/our-journey-electric" target="_blank" rel="noopener">https://www.islandbuses.info/our-journey-electric</a> <span class="ref-meta">(accessed Jun. 11, 2026).</span></span></li>
+      <li class="ref-item"><span>Procurement Services, "Bus Shelters, Real Time Passenger Information (RTPI) and Associated Services," <span class="ref-meta">Procurement Services, 2023.</span> <a href="https://www.procurementservices.co.uk/our-solutions/frameworks/fleet/bus-shelters-real-time-passenger-information-rtpi-and-associated-services" target="_blank" rel="noopener">https://www.procurementservices.co.uk/our-solutions/frameworks/fleet/bus-shelters-real-time-passenger-information-rtpi-and-associated-services</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>BCPCouncil, "Bus shelter safety upgrades," <span class="ref-meta">BCP, 2024.</span> <a href="https://www.bcpcouncil.gov.uk/news-hub/news-articles/bus-shelter-safety-upgrades" target="_blank" rel="noopener">https://www.bcpcouncil.gov.uk/news-hub/news-articles/bus-shelter-safety-upgrades</a> <span class="ref-meta">(accessed Jun. 10, 2026).</span></span></li>
+      <li class="ref-item"><span>D. Maxwell, "Boris Johnson opens Wrightbus plant in County Antrim," <span class="ref-meta">BBC News, May 09, 2013. Accessed: Jun. 11, 2026. [Online].</span> Available: <a href="https://www.bbc.co.uk/news/uk-northern-ireland-22466121" target="_blank" rel="noopener">https://www.bbc.co.uk/news/uk-northern-ireland-22466121</a></span></li>
+      <li class="ref-item"><span>Mayor of London, "The Mayor's one hour 'Hopper' fare | London City Hall," <span class="ref-meta">www.london.gov.uk, 2026.</span> <a href="https://www.london.gov.uk/programmes-strategies/transport/mayors-one-hour-hopper-fare" target="_blank" rel="noopener">https://www.london.gov.uk/programmes-strategies/transport/mayors-one-hour-hopper-fare</a> <span class="ref-meta">(accessed Jun. 11, 2026).</span></span></li>
+      <li class="ref-item"><span>E. Yurday, "Average Cost to Run a Car UK 2021," <span class="ref-meta">www.nimblefins.co.uk, Jan. 09, 2020.</span> <a href="https://www.nimblefins.co.uk/cheap-car-insurance/average-cost-run-car-uk" target="_blank" rel="noopener">https://www.nimblefins.co.uk/cheap-car-insurance/average-cost-run-car-uk</a> <span class="ref-meta">(accessed Jun. 11, 2026).</span></span></li>
+    </ol>
+  </div>
+</div>
 <script>
 const INCOME = {"Barking and Dagenham":29400,"Barnet":36100,"Bexley":33200,"Brent":30100,"Bromley":38800,"Croydon":33200,"Ealing":32500,"Enfield":32200,"Haringey":34500,"Harrow":33700,"Havering":34000,"Hillingdon":34700,"Hounslow":31900,"Kingston upon Thames":40800,"Merton":37000,"Newham":29800,"Redbridge":32100,"Richmond upon Thames":48100,"Sutton":34400,"Waltham Forest":33700,"Camden":42800,"City of London":70000,"Greenwich":35900,"Hackney":37600,"Hammersmith and Fulham":41600,"Islington":40800,"Kensington and Chelsea":47800,"Lambeth":39300,"Lewisham":34600,"Southwark":38300,"Tower Hamlets":38700,"Wandsworth":43100,"Westminster":47400};
 
@@ -198,6 +307,7 @@ function compute(name, d) {
     bus_density: d.bus / d.area,
     tube_density: d.tube / d.area,
     school_dist: d.school_dist,
+    accidents: d.accidents,
     population: d.pop,
     children_pct: d.children / d.pop * 100,
     area: d.area,
@@ -221,6 +331,7 @@ const METRICS = {
   bus_density:      { label: "Bus stops per km²",          fmt: v => v.toFixed(1),                             yLabel: "Bus stops/km²",          title: "Bus stops per km²" },
   tube_density:     { label: "Tube stops per km²",         fmt: v => v.toFixed(2),                             yLabel: "Tube stops/km²",         title: "Tube stops per km²" },
   school_dist:      { label: "Home-to-school distance",    fmt: v => v.toFixed(2) + " km",                     yLabel: "Distance (km)",          title: "Home-to-school distance (km)" },
+  accidents:        { label: "Road accidents (2019)",      fmt: v => Math.round(v).toLocaleString(),           yLabel: "Road accidents (2019)",  title: "Road accidents (2019)" },
   population:       { label: "Population",                 fmt: v => Math.round(v).toLocaleString(),           yLabel: "Population",             title: "Population (2023)" },
   children_pct:     { label: "Children percentage",        fmt: v => v.toFixed(1) + "%",                       yLabel: "Children (%)",           title: "Children as % of population" },
   area:             { label: "Area",                        fmt: v => v.toFixed(1) + " km²",                   yLabel: "Area (km²)",             title: "Area (km²)" },
@@ -368,6 +479,7 @@ function scatterOptions(xLabel, yLabel, fmtX, fmtY) {
 }
 
 function renderScatters() {
+  if (typeof Chart === 'undefined') return; // CDN unavailable — keep rest of dashboard working
   const m = METRICS[currentMetric];
   const fmtM = m.fmt;
   const fmtCarKm = v => Math.round(v).toLocaleString() + ' km';
@@ -447,6 +559,94 @@ btnCoL.addEventListener('click', () => {
 renderAll();
 setScatterFilterStyle(1, 'all');
 setScatterFilterStyle(2, 'all');
+
+/* ---------- Page navigation (hash routing) ---------- */
+const PAGES = ['dashboard', 'gallery', 'references'];
+function showPage(name) {
+  if (!PAGES.includes(name)) name = 'dashboard';
+  PAGES.forEach(p => {
+    document.getElementById('page-' + p).classList.toggle('visible', p === name);
+    document.querySelector(`.nav-link[data-page="${p}"]`).classList.toggle('active', p === name);
+  });
+  if (name === 'gallery') loadGallery();
+  if (name === 'dashboard') renderAll(); // re-render charts in case they were hidden on load
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => showPage(location.hash.replace('#', '')));
+
+/* ---------- Gallery: auto-load images from the "gallery" folder ---------- */
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'];
+let galleryLoaded = false;
+
+function captionFromFilename(filename) {
+  const base = filename.replace(/\.[^.]+$/, '');           // strip extension
+  const words = base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return words.replace(/\b\w/g, c => c.toUpperCase());     // Title Case
+}
+
+async function listGalleryFiles() {
+  // Strategy 1: GitHub Pages — list the folder via the GitHub API
+  const host = location.hostname;
+  if (host.endsWith('.github.io')) {
+    const owner = host.replace('.github.io', '');
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    const repo = seg || owner + '.github.io';
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/gallery`);
+    if (res.ok) {
+      const items = await res.json();
+      return items.filter(i => i.type === 'file').map(i => i.name);
+    }
+  }
+  // Strategy 2: fallback manifest — gallery/manifest.json listing file names
+  const res = await fetch('gallery/manifest.json');
+  if (res.ok) {
+    const names = await res.json();
+    if (Array.isArray(names)) return names;
+  }
+  throw new Error('no listing available');
+}
+
+async function loadGallery() {
+  if (galleryLoaded) return;
+  galleryLoaded = true;
+  const grid = document.getElementById('gallery-grid');
+  const status = document.getElementById('gallery-status');
+  status.hidden = false;
+  status.textContent = 'Loading images…';
+  try {
+    const files = (await listGalleryFiles())
+      .filter(n => IMAGE_EXTS.includes(n.split('.').pop().toLowerCase()))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (!files.length) {
+      status.innerHTML = 'No images found yet. Add image files to the <code>gallery/</code> folder and they will appear here automatically.';
+      return;
+    }
+    status.hidden = true;
+    grid.innerHTML = '';
+    files.forEach(name => {
+      const card = document.createElement('figure');
+      card.className = 'gallery-card';
+      const img = document.createElement('img');
+      img.src = 'gallery/' + encodeURIComponent(name);
+      img.alt = captionFromFilename(name);
+      img.loading = 'lazy';
+      img.onerror = () => card.remove();
+      const cap = document.createElement('figcaption');
+      cap.className = 'gallery-caption';
+      cap.textContent = captionFromFilename(name);
+      card.appendChild(img);
+      card.appendChild(cap);
+      grid.appendChild(card);
+    });
+  } catch (e) {
+    galleryLoaded = false; // allow retry on next visit
+    status.innerHTML = 'Couldn\'t list the <code>gallery/</code> folder. On GitHub Pages this works automatically; when running locally, add a <code>gallery/manifest.json</code> file listing the image names, e.g. <code>["bus-shelter.jpg", "ptal-map.png"]</code>.';
+  }
+}
+
+// Honour a page hash on first load (e.g. someone links straight to #references)
+if (location.hash) showPage(location.hash.replace('#', ''));
+
 </script>
 </body>
 </html>
