@@ -632,7 +632,6 @@ function orderFromFilename(filename) {
 function captionFromFilename(filename) {
   let base = filename.replace(/\.[^.]+$/, ''); // strip extension
   base = base.replace(/^\d+\s*[.\-_)]*\s*/, ''); // strip leading order number ("1." / "2 -" / "3)")
-  base = base.replace(/\s*\[\d+\]\s*$/, '');     // strip trailing "[1]" duplicate markers
   const words = base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
   return words.replace(/\b\w/g, c => c.toUpperCase());     // Title Case
 }
