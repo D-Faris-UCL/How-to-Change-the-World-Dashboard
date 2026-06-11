@@ -110,16 +110,40 @@
   .gallery-status { font-size: 13.5px; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; padding: 28px; text-align: center; line-height: 1.7; }
   .gallery-status code { font-family: var(--mono); font-size: 12.5px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
 
+  /* ---- Mobile metric dropdown (hidden on desktop) ---- */
+  .metric-select { display: none; width: 100%; font-family: var(--font); font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 9px 10px; }
+
+  /* ---- Lightbox ---- */
+  .gallery-card img { cursor: pointer; }
+  .lightbox { position: fixed; inset: 0; z-index: 200; background: rgba(18,17,14,0.88); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.25s ease; }
+  .lightbox[hidden] { display: none; }
+  .lightbox.open { opacity: 1; }
+  .lightbox img { max-width: min(1100px, 94vw); max-height: 80vh; border-radius: 8px; box-shadow: 0 24px 64px rgba(0,0,0,0.5); transform: scale(0.92); transition: transform 0.25s ease; }
+  .lightbox.open img { transform: scale(1); }
+  .lightbox-caption { color: rgba(255,255,255,0.88); font-size: 14px; margin-top: 14px; text-align: center; }
+  .lightbox-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .lightbox-close:hover { background: rgba(255,255,255,0.24); }
+  @media (prefers-reduced-motion: reduce) {
+    .lightbox, .lightbox img, .bar-fill { transition: none; }
+  }
+
   /* ---- Responsive ---- */
   @media (max-width: 900px) {
     header { padding: 14px 16px; flex-wrap: wrap; gap: 8px; }
     .header-text { flex-wrap: wrap; gap: 4px 12px; }
     nav { margin-left: 0; width: 100%; }
-    .layout { display: block; }
-    aside { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 16px 0; }
-    .sidebar-section { padding: 0 16px 14px; }
-    .sidebar-section .metric-btn { display: inline-block; width: auto; border: 1px solid var(--border); margin: 0 6px 6px 0; }
-    .divider { margin: 0 16px 14px; }
+    /* Reorder: metric dropdown → charts → highlight & options at the bottom */
+    .layout { display: flex; flex-direction: column; }
+    aside { display: contents; }
+    #side-metric { order: 0; background: var(--surface); border-bottom: 1px solid var(--border); }
+    main { order: 1; }
+    #side-filters { order: 2; background: var(--surface); border-top: 1px solid var(--border); padding: 16px 0 24px; }
+    #side-metric .sidebar-section { padding: 14px 16px; }
+    #side-metric .metric-btn { display: none; }
+    #side-metric .divider { display: none; }
+    .metric-select { display: block; }
+    #side-filters .sidebar-section { padding: 0 16px 10px; }
+    #side-filters .divider { margin: 6px 16px 16px; }
     .filter-row { padding: 0 16px 8px; flex-direction: row; flex-wrap: wrap; }
     .filter-btn, .toggle-btn { width: auto; }
     main { padding: 16px; gap: 16px; }
@@ -158,37 +182,42 @@
 <div class="page visible" id="page-dashboard">
 <div class="layout">
   <aside>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Metric</div>
-      <button class="metric-btn active" data-metric="car_per_capita">Car km per capita</button>
-      <button class="metric-btn" data-metric="cars_per_capita">Cars per capita</button>
-      <button class="metric-btn" data-metric="co2_per_capita">Annual road CO₂ per capita</button>
-      <button class="metric-btn" data-metric="cars_per_capita_per_income">Cars per capita ÷ income</button>
-      <button class="metric-btn" data-metric="ptal_index">Mean PTAL Access Index</button>
-      <button class="metric-btn" data-metric="transit_density">Total transit stops per km²</button>
-      <button class="metric-btn" data-metric="bus_density">Bus stops per km²</button>
-      <button class="metric-btn" data-metric="tube_density">Tube stops per km²</button>
-      <button class="metric-btn" data-metric="school_dist">Home-to-school distance</button>
-      <button class="metric-btn" data-metric="accidents">Road accidents (2019)</button>
-      <button class="metric-btn" data-metric="population">Population</button>
-      <button class="metric-btn" data-metric="children_pct">Children percentage</button>
-      <button class="metric-btn" data-metric="area">Area</button>
-      <button class="metric-btn" data-metric="median_income">Median income</button>
+    <div class="side-group" id="side-metric">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Metric</div>
+        <select class="metric-select" id="metric-select" aria-label="Choose metric"></select>
+        <button class="metric-btn active" data-metric="car_per_capita">Car km per capita</button>
+        <button class="metric-btn" data-metric="cars_per_capita">Cars per capita</button>
+        <button class="metric-btn" data-metric="co2_per_capita">Annual road CO₂ per capita</button>
+        <button class="metric-btn" data-metric="cars_per_capita_per_income">Cars per capita ÷ income</button>
+        <button class="metric-btn" data-metric="ptal_index">Mean PTAL Access Index</button>
+        <button class="metric-btn" data-metric="transit_density">Total transit stops per km²</button>
+        <button class="metric-btn" data-metric="bus_density">Bus stops per km²</button>
+        <button class="metric-btn" data-metric="tube_density">Tube stops per km²</button>
+        <button class="metric-btn" data-metric="school_dist">Home-to-school distance</button>
+        <button class="metric-btn" data-metric="accidents">Road accidents</button>
+        <button class="metric-btn" data-metric="population">Population</button>
+        <button class="metric-btn" data-metric="children_pct">Children percentage</button>
+        <button class="metric-btn" data-metric="area">Area</button>
+        <button class="metric-btn" data-metric="median_income">Median income</button>
+      </div>
+      <hr class="divider">
     </div>
-    <hr class="divider">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Highlight</div>
-    </div>
-    <div class="filter-row">
-      <button class="filter-btn" id="btn-outer"><span class="dot"></span> Outer boroughs</button>
-      <button class="filter-btn" id="btn-inner"><span class="dot"></span> Inner boroughs</button>
-    </div>
-    <hr class="divider">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Options</div>
-    </div>
-    <div class="filter-row">
-      <button class="toggle-btn" id="btn-col"><span class="dot"></span> Exclude City of London</button>
+    <div class="side-group" id="side-filters">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Highlight</div>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn" id="btn-outer"><span class="dot"></span> Outer boroughs</button>
+        <button class="filter-btn" id="btn-inner"><span class="dot"></span> Inner boroughs</button>
+      </div>
+      <hr class="divider">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Options</div>
+      </div>
+      <div class="filter-row">
+        <button class="toggle-btn" id="btn-col"><span class="dot"></span> Exclude City of London</button>
+      </div>
     </div>
   </aside>
   <main>
@@ -254,7 +283,6 @@
 <div class="page" id="page-gallery">
   <div class="page-main">
     <div class="page-title">Gallery</div>
-    <div class="page-sub">Images load automatically from the <code style="font-family:var(--mono);font-size:12px">gallery/</code> folder · captions come from file names</div>
     <div class="gallery-grid" id="gallery-grid"></div>
     <div class="gallery-status" id="gallery-status" hidden></div>
   </div>
@@ -287,6 +315,12 @@
     </ol>
   </div>
 </div>
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close image">✕</button>
+  <img id="lightbox-img" alt="">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
+
 <script>
 const INCOME = {"Barking and Dagenham":29400,"Barnet":36100,"Bexley":33200,"Brent":30100,"Bromley":38800,"Croydon":33200,"Ealing":32500,"Enfield":32200,"Haringey":34500,"Harrow":33700,"Havering":34000,"Hillingdon":34700,"Hounslow":31900,"Kingston upon Thames":40800,"Merton":37000,"Newham":29800,"Redbridge":32100,"Richmond upon Thames":48100,"Sutton":34400,"Waltham Forest":33700,"Camden":42800,"City of London":70000,"Greenwich":35900,"Hackney":37600,"Hammersmith and Fulham":41600,"Islington":40800,"Kensington and Chelsea":47800,"Lambeth":39300,"Lewisham":34600,"Southwark":38300,"Tower Hamlets":38700,"Wandsworth":43100,"Westminster":47400};
 
@@ -331,7 +365,7 @@ const METRICS = {
   bus_density:      { label: "Bus stops per km²",          fmt: v => v.toFixed(1),                             yLabel: "Bus stops/km²",          title: "Bus stops per km²" },
   tube_density:     { label: "Tube stops per km²",         fmt: v => v.toFixed(2),                             yLabel: "Tube stops/km²",         title: "Tube stops per km²" },
   school_dist:      { label: "Home-to-school distance",    fmt: v => v.toFixed(2) + " km",                     yLabel: "Distance (km)",          title: "Home-to-school distance (km)" },
-  accidents:        { label: "Road accidents (2019)",      fmt: v => Math.round(v).toLocaleString(),           yLabel: "Road accidents (2019)",  title: "Road accidents (2019)" },
+  accidents:        { label: "Road accidents",      fmt: v => Math.round(v).toLocaleString(),           yLabel: "Road accidents",  title: "Road accidents" },
   population:       { label: "Population",                 fmt: v => Math.round(v).toLocaleString(),           yLabel: "Population",             title: "Population (2023)" },
   children_pct:     { label: "Children percentage",        fmt: v => v.toFixed(1) + "%",                       yLabel: "Children (%)",           title: "Children as % of population" },
   area:             { label: "Area",                        fmt: v => v.toFixed(1) + " km²",                   yLabel: "Area (km²)",             title: "Area (km²)" },
@@ -524,14 +558,26 @@ function setScatter2Filter(val) { scatter2Filter = val; setScatterFilterStyle(2,
 
 function renderAll() { renderStats(); renderBars(); renderScatters(); }
 
+const metricSelect = document.getElementById('metric-select');
 document.querySelectorAll('.metric-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentMetric = btn.dataset.metric;
-    renderAll();
-  });
+  const opt = document.createElement('option');
+  opt.value = btn.dataset.metric;
+  opt.textContent = btn.textContent;
+  metricSelect.appendChild(opt);
 });
+metricSelect.value = currentMetric;
+
+function setMetric(m) {
+  currentMetric = m;
+  document.querySelectorAll('.metric-btn').forEach(b => b.classList.toggle('active', b.dataset.metric === m));
+  if (metricSelect.value !== m) metricSelect.value = m;
+  renderAll();
+}
+
+document.querySelectorAll('.metric-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMetric(btn.dataset.metric));
+});
+metricSelect.addEventListener('change', () => setMetric(metricSelect.value));
 
 document.getElementById('sort-sel').addEventListener('change', e => { sortMode = e.target.value; renderBars(); });
 
@@ -578,8 +624,15 @@ window.addEventListener('hashchange', () => showPage(location.hash.replace('#', 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'avif'];
 let galleryLoaded = false;
 
+function orderFromFilename(filename) {
+  const m = filename.match(/^(\d+)/);          // e.g. "1.Bus interior [1].png" → 1
+  return m ? parseInt(m[1], 10) : Infinity;    // unnumbered files go last
+}
+
 function captionFromFilename(filename) {
-  const base = filename.replace(/\.[^.]+$/, '');           // strip extension
+  let base = filename.replace(/\.[^.]+$/, ''); // strip extension
+  base = base.replace(/^\d+\s*[.\-_)]*\s*/, ''); // strip leading order number ("1." / "2 -" / "3)")
+  base = base.replace(/\s*\[\d+\]\s*$/, '');     // strip trailing "[1]" duplicate markers
   const words = base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
   return words.replace(/\b\w/g, c => c.toUpperCase());     // Title Case
 }
@@ -616,7 +669,7 @@ async function loadGallery() {
   try {
     const files = (await listGalleryFiles())
       .filter(n => IMAGE_EXTS.includes(n.split('.').pop().toLowerCase()))
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      .sort((a, b) => orderFromFilename(a) - orderFromFilename(b) || a.localeCompare(b, undefined, { numeric: true }));
     if (!files.length) {
       status.innerHTML = 'No images found yet. Add image files to the <code>gallery/</code> folder and they will appear here automatically.';
       return;
@@ -624,16 +677,19 @@ async function loadGallery() {
     status.hidden = true;
     grid.innerHTML = '';
     files.forEach(name => {
+      const caption = captionFromFilename(name);
+      const src = 'gallery/' + encodeURIComponent(name);
       const card = document.createElement('figure');
       card.className = 'gallery-card';
       const img = document.createElement('img');
-      img.src = 'gallery/' + encodeURIComponent(name);
-      img.alt = captionFromFilename(name);
+      img.src = src;
+      img.alt = caption;
       img.loading = 'lazy';
       img.onerror = () => card.remove();
+      img.addEventListener('click', () => openLightbox(src, caption));
       const cap = document.createElement('figcaption');
       cap.className = 'gallery-caption';
-      cap.textContent = captionFromFilename(name);
+      cap.textContent = caption;
       card.appendChild(img);
       card.appendChild(cap);
       grid.appendChild(card);
@@ -643,6 +699,30 @@ async function loadGallery() {
     status.innerHTML = 'Couldn\'t list the <code>gallery/</code> folder. On GitHub Pages this works automatically; when running locally, add a <code>gallery/manifest.json</code> file listing the image names, e.g. <code>["bus-shelter.jpg", "ptal-map.png"]</code>.';
   }
 }
+
+/* ---------- Lightbox ---------- */
+const lb = document.getElementById('lightbox');
+const lbImg = document.getElementById('lightbox-img');
+const lbCap = document.getElementById('lightbox-caption');
+
+function openLightbox(src, caption) {
+  lbImg.src = src;
+  lbImg.alt = caption;
+  lbCap.textContent = caption;
+  lb.hidden = false;
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => requestAnimationFrame(() => lb.classList.add('open')));
+}
+
+function closeLightbox() {
+  lb.classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(() => { lb.hidden = true; lbImg.src = ''; }, 260);
+}
+
+document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) closeLightbox(); });
 
 // Honour a page hash on first load (e.g. someone links straight to #references)
 if (location.hash) showPage(location.hash.replace('#', ''));
